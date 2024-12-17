@@ -1,19 +1,19 @@
-use std::iter::Peekable;
 
 use regex::Regex;
 
+// todo add eq, neq, setz, pack it further, by priority \n
 #[derive(Debug)]
-pub enum Token {
+pub enum TokenKind {
     Number(u8),
     Char(char),
-    Plus,
-    Minus,
-    Star,
-    Slash,
+    Addition(char),
+    Multiplication(char),
     Percent,
-    Or,
-    And,
+    Logical(String),
     Not,
+    Set,
+    DoubleAddition(String),
+    Compare(String),
     Identifier(String),
     If,
     For,
@@ -26,52 +26,62 @@ pub enum Token {
     Semicolon,
 }
 
-impl Token {
-    pub fn from_id(id: u8, value: &str) -> Option<Token> {
+impl TokenKind {
+    pub fn from_id(id: u8, value: &str) -> Option<TokenKind> {
         match id {
-             0 => Some(Token::Number(value.parse().unwrap())),                     
-             1 => Some(Token::Plus),
-             2 => Some(Token::Minus),
-             3 => Some(Token::Star),
-             4 => Some(Token::Slash),
-             5 => Some(Token::Percent),
-             6 => Some(Token::Or),
-             7 => Some(Token::And),
-             8 => Some(Token::Not),
-             9 => Some(Token::If),
-             10 => Some(Token::For),
-             11 => Some(Token::While),
-             12 => Some(Token::OpenParentheses),
-             13 => Some(Token::CloseParentheses),
-             14 => Some(Token::OpenBrace),
-             15 => Some(Token::CloseBrace),
-             16 => Some(Token::Comma),
-             17 => Some(Token::Semicolon),
-             18 => Some(Token::Char(value.chars().nth(0).unwrap())),
-             19 => Some(Token::Identifier(value.to_string())),
+             0 => Some(TokenKind::Number(value.parse().unwrap())),                     
+             0 => Some(TokenKind::Plus),
+             0 => Some(TokenKind::Minus),
+             0 => Some(TokenKind::Star),
+             0 => Some(TokenKind::Slash),
+             0 => Some(TokenKind::Percent),
+             0 => Some(TokenKind::Or),
+             0 => Some(TokenKind::And),
+             0 => Some(TokenKind::Not),
+             0 => Some(TokenKind::LessThan),
+             0 => Some(TokenKind::GreaterThan),
+             0 => Some(TokenKind::LessThanEqual),
+             0 => Some(TokenKind::GreaterThanEqual),
+             0 => Some(TokenKind::If),
+             0 => Some(TokenKind::For),
+             0 => Some(TokenKind::While),
+             0 => Some(TokenKind::OpenParentheses),
+             0 => Some(TokenKind::CloseParentheses),
+             0 => Some(TokenKind::OpenBrace),
+             0 => Some(TokenKind::CloseBrace),
+             0 => Some(TokenKind::Comma),
+             0 => Some(TokenKind::Semicolon),
+             0 => Some(TokenKind::Char(value.chars().nth(1).unwrap())),
+             0 => Some(TokenKind::Identifier(value.to_string())),
              _ => None
         }
     }
 }
 
+#[derive(Debug)]
 pub struct Error {
     line: u16,
     message: String
 }
 
+#[derive(Debug)]
+pub struct Token {
+    kind: TokenKind,
+    line: u16, 
+    pos: u16,
+}
 
 pub fn lex(input: &String) -> Result<Vec<Token>, Error> {
-    const RE_LEN: u8 = 21;
     let re = Regex::new(r"
         (?<NUMBER>[0-9]+)
-        |(?<PLUS>\+)
-        |(?<MINUS>-)
-        |(?<STAR>\*)
-        |(?<SLASH>/)
+        |(?<ADDITION>\+\-)
+        |(?<MULTIPLICATION>\*/)
         |(?<PERCENT>%)
-        |(?<OR>\|\|)
-        |(?<AND>&&)
+        |(?<LOGICAL>\|\||&&)
         |(?<NOT>!)
+        |(?<SET>=|\+=|\-=|\*=|/=)
+        |(?<COMPARE>)
+        |(?<LT>\<)
         |(?<IF>if)
         |(?<FOR>for)
         |(?<WHILE>while)
@@ -88,24 +98,44 @@ pub fn lex(input: &String) -> Result<Vec<Token>, Error> {
         |(?<ERROR>(.+))
         ".replace("\n", "").replace(" ", "").as_str()).unwrap(); // dirty hack to make in on one line lol
 
-//    let re = Regex::new("(?<NUMBER>[0-9]+)|(?<SEX>\\+)").unwrap();
-
-
+    let mut result = Vec::new();
+    let mut line:u16 = 0;
+    let mut pos:u16 = 0; 
     for token in re.captures_iter(input) {
         let mut id: u8 = 0;
         for re_match in token.iter().skip(1) {
             if re_match != None {
-                println!("{:?}", Token::from_id(id, re_match.unwrap().as_str()));
-                continue;
+                if id == 25 {
+                    break;
+                }
+
+                if id == 26 {
+                    return Err(Error {line: 0, message: "unexpected token".to_string()});
+                }
+
+
+                if id == 24 {
+                    line += 1;
+                    pos = 0;
+                    break;
+                }
+
+                
+                result.push(
+                    Token {
+                        kind: TokenKind::from_id(id, re_match.unwrap().as_str()).unwrap(),
+                        line, 
+                        pos,
+                    }
+                );
+
+                pos += re_match.unwrap().len() as u16;
+                break;
             }
             id += 1;
 
         }
-
-        if id == RE_LEN {
-            return Err(Error {line: 0, message: "unexpected token".to_string()});
-        }
     }
 
-    Ok(Vec::new())
+    Ok(result)
 }

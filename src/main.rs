@@ -4,5 +4,5 @@ use lexer::lex;
 pub mod lexer;
 
 fn main() {
-    lex(&"%%%".to_string());
+    println!("{:?}", lex(&"11+1\n's'+'x'".to_string()));
 }
