@@ -1,7 +1,7 @@
 
 use regex::Regex;
 
-// todo add eq, neq, setz, pack it further, by priority \n
+// todo \n
 #[derive(Debug)]
 pub enum TokenKind {
     Number(u8),
@@ -11,7 +11,7 @@ pub enum TokenKind {
     Percent,
     Logical(String),
     Not,
-    Set,
+    Set(String),
     DoubleAddition(String),
     Compare(String),
     Identifier(String),
@@ -29,30 +29,26 @@ pub enum TokenKind {
 impl TokenKind {
     pub fn from_id(id: u8, value: &str) -> Option<TokenKind> {
         match id {
-             0 => Some(TokenKind::Number(value.parse().unwrap())),                     
-             0 => Some(TokenKind::Plus),
-             0 => Some(TokenKind::Minus),
-             0 => Some(TokenKind::Star),
-             0 => Some(TokenKind::Slash),
-             0 => Some(TokenKind::Percent),
-             0 => Some(TokenKind::Or),
-             0 => Some(TokenKind::And),
-             0 => Some(TokenKind::Not),
-             0 => Some(TokenKind::LessThan),
-             0 => Some(TokenKind::GreaterThan),
-             0 => Some(TokenKind::LessThanEqual),
-             0 => Some(TokenKind::GreaterThanEqual),
-             0 => Some(TokenKind::If),
-             0 => Some(TokenKind::For),
-             0 => Some(TokenKind::While),
-             0 => Some(TokenKind::OpenParentheses),
-             0 => Some(TokenKind::CloseParentheses),
-             0 => Some(TokenKind::OpenBrace),
-             0 => Some(TokenKind::CloseBrace),
-             0 => Some(TokenKind::Comma),
-             0 => Some(TokenKind::Semicolon),
-             0 => Some(TokenKind::Char(value.chars().nth(1).unwrap())),
-             0 => Some(TokenKind::Identifier(value.to_string())),
+            0 => Some(TokenKind::Number(value.parse().unwrap())),
+            1 => Some(TokenKind::Set(value.to_string())),
+            2 => Some(TokenKind::DoubleAddition(value.to_string())),
+            3 => Some(TokenKind::Addition(value.chars().nth(0).unwrap())),
+            4 => Some(TokenKind::Multiplication(value.chars().nth(0).unwrap())),
+            5 => Some(TokenKind::Percent),
+            6 => Some(TokenKind::Logical(value.to_string())),
+            7 => Some(TokenKind::Not),
+            8 => Some(TokenKind::Compare(value.to_string())),
+            9 => Some(TokenKind::If),
+            10 => Some(TokenKind::For),
+            11 => Some(TokenKind::While),
+            12 => Some(TokenKind::OpenParentheses),
+            13 => Some(TokenKind::CloseParentheses),
+            14 => Some(TokenKind::OpenBrace),
+            15 => Some(TokenKind::CloseBrace),
+            16 => Some(TokenKind::Comma),
+            17 => Some(TokenKind::Semicolon),
+            18 => Some(TokenKind::Char(value.chars().nth(1).unwrap())),
+            19 => Some(TokenKind::Identifier(value.to_string())),
              _ => None
         }
     }
@@ -74,14 +70,14 @@ pub struct Token {
 pub fn lex(input: &String) -> Result<Vec<Token>, Error> {
     let re = Regex::new(r"
         (?<NUMBER>[0-9]+)
-        |(?<ADDITION>\+\-)
-        |(?<MULTIPLICATION>\*/)
+        |(?<SET>=|\+=|\-=|\*=|/=)
+        |(?<DOUBLE_ADDITION>\+\+|\-\-)
+        |(?<ADDITION>\+|\-)
+        |(?<MULTIPLICATION>\*|/)
         |(?<PERCENT>%)
         |(?<LOGICAL>\|\||&&)
         |(?<NOT>!)
-        |(?<SET>=|\+=|\-=|\*=|/=)
-        |(?<COMPARE>)
-        |(?<LT>\<)
+        |(?<COMPARE>==|!=|\<|\>|\<=|\>=)
         |(?<IF>if)
         |(?<FOR>for)
         |(?<WHILE>while)
@@ -105,19 +101,18 @@ pub fn lex(input: &String) -> Result<Vec<Token>, Error> {
         let mut id: u8 = 0;
         for re_match in token.iter().skip(1) {
             if re_match != None {
-                if id == 25 {
-                    break;
-                }
-
-                if id == 26 {
-                    return Err(Error {line: 0, message: "unexpected token".to_string()});
-                }
-
-
-                if id == 24 {
+                if id == 20 { // NEWLINE
                     line += 1;
                     pos = 0;
                     break;
+                }
+
+                if id == 21 { // WHITESPACE
+                    break;
+                }
+
+                if id == 22 { // ERROR
+                    return Err(Error {line: 0, message: "unexpected token".to_string()});
                 }
 
                 
